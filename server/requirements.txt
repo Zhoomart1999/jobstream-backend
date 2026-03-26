@@ -1,6 +1,6 @@
 fastapi[all]
 uvicorn
-tortoise-orm[asyncpg]
+tortoise-orm
 pydantic[email]
 pydantic-settings
 python-jose[cryptography]
