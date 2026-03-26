@@ -1,0 +1,13 @@
+fastapi[all]
+uvicorn
+tortoise-orm[asyncpg]
+pydantic[email]
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+pillow
+python-multipart
+celery
+redis
+aiogram
+python-dotenv

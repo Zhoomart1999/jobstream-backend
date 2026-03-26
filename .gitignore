@@ -1,0 +1,10 @@
+node_modules/
+.next/
+server/venv/
+__pycache__/
+**/*/__pycache__/
+*.pyc
+.env
+.idea/
+.vscode/
+server/db.sqlite3*
