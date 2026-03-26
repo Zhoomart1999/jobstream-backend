@@ -35,6 +35,11 @@ class User(models.Model):
     country = fields.CharField(max_length=100, default="Kazakhstan")
     city = fields.CharField(max_length=100, default="Almaty")
     hashed_password = fields.CharField(max_length=255, null=True)
+    # New Wave 1 fields
+    is_open_to_work = fields.BooleanField(default=False)
+    desired_salary = fields.CharField(max_length=100, null=True)
+    skills = fields.TextField(null=True)  # comma-separated skills
+    avatar_url = fields.CharField(max_length=500, null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
@@ -57,6 +62,7 @@ class Vacancy(models.Model):
     lat = fields.FloatField(null=True)
     lng = fields.FloatField(null=True)
     instagram_card_url = fields.CharField(max_length=255, null=True)
+    view_count = fields.IntField(default=0)  # Wave 1: view tracking
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
@@ -130,3 +136,24 @@ class Message(models.Model):
 
     class Meta:
         table = "messages"
+
+# Wave 1 new models
+class SavedVacancy(models.Model):
+    id = fields.IntField(pk=True)
+    user = fields.ForeignKeyField("models.User", related_name="saved_vacancies")
+    vacancy = fields.ForeignKeyField("models.Vacancy", related_name="saved_by")
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "saved_vacancies"
+        unique_together = (("user", "vacancy"),)
+
+class Recommendation(models.Model):
+    id = fields.IntField(pk=True)
+    author = fields.ForeignKeyField("models.User", related_name="given_recommendations")
+    target_user = fields.ForeignKeyField("models.User", related_name="received_recommendations")
+    text = fields.TextField()
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "recommendations"

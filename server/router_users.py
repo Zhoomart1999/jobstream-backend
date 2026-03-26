@@ -6,6 +6,16 @@ from typing import Optional
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+class OpenToWorkRequest(BaseModel):
+    is_open_to_work: bool
+
+@router.patch("/me/status", response_model=dict)
+async def update_open_to_work(data: OpenToWorkRequest, user: User = Depends(get_current_user)):
+    user.is_open_to_work = data.is_open_to_work
+    await user.save()
+    return {"is_open_to_work": user.is_open_to_work}
+
+
 class CVRequest(BaseModel):
     full_name: str
     experience: str

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models import Vacancy, User, UserRole
+from models import Vacancy, User, UserRole, SavedVacancy, Application
 from pydantic import BaseModel
 from typing import List, Optional
 from utils_image import generate_instagram_card
+from auth import get_current_user
 import os
 
 router = APIRouter(prefix="/vacancies", tags=["vacancies"])
@@ -100,7 +101,13 @@ async def get_vacancy(id: int):
     vacancy = await Vacancy.get_or_none(id=id).prefetch_related("employer")
     if not vacancy:
         raise HTTPException(status_code=404, detail="Vacancy not found")
-    
+
+    # Increment view count
+    vacancy.view_count = (vacancy.view_count or 0) + 1
+    await vacancy.save()
+
+    app_count = await Application.filter(vacancy=vacancy).count()
+
     return {
         "id": vacancy.id,
         "title": vacancy.title,
@@ -114,8 +121,36 @@ async def get_vacancy(id: int):
         "category": vacancy.category,
         "lat": vacancy.lat,
         "lng": vacancy.lng,
+        "view_count": vacancy.view_count,
+        "application_count": app_count,
         "created_at": vacancy.created_at.isoformat()
     }
+
+# --- Saved Vacancies ---
+@router.post("/{id}/save", response_model=dict)
+async def save_vacancy(id: int, user: User = Depends(get_current_user)):
+    vacancy = await Vacancy.get_or_none(id=id)
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Vacancy not found")
+    saved, created = await SavedVacancy.get_or_create(user=user, vacancy=vacancy)
+    return {"saved": True, "created": created}
+
+@router.delete("/{id}/save", response_model=dict)
+async def unsave_vacancy(id: int, user: User = Depends(get_current_user)):
+    deleted = await SavedVacancy.filter(user=user, vacancy_id=id).delete()
+    return {"saved": False, "deleted": deleted > 0}
+
+@router.get("/saved/list", response_model=List[dict])
+async def get_saved_vacancies(user: User = Depends(get_current_user)):
+    saved = await SavedVacancy.filter(user=user).prefetch_related("vacancy", "vacancy__employer")
+    return [{
+        "id": s.vacancy.id,
+        "title": s.vacancy.title,
+        "employer": s.vacancy.employer.full_name if s.vacancy.employer else "Anonymous",
+        "salary": s.vacancy.salary,
+        "location": s.vacancy.location,
+        "saved_at": s.created_at.isoformat()
+    } for s in saved]
 
 class ApplicationCreate(BaseModel):
     candidate_id: int
